@@ -14,29 +14,32 @@ ADDR = (HOST, PORT)
 
 def client_handler(conn, addr):
     req = conn.recv(DATA_LEN).decode(FORMAT)
+    
     headers = {}
-    for d in req.split('\n'):
+    for d in req.split('\r\n')[:-2]:    # parse http req
         headers[d[0:d.find(' ')]] = d[d.find(' ') + 1:]
+    print(headers)
     #print(headers)
     # print("New Connection")
     # print(f"Socket info: {conn}")
     # print(f"Address info: {addr}")
 
     #print(conn.send("HTTP/1.1 200 OK".encode(FORMAT)))
-    print('.' + headers["GET"].split()[0], os.path.exists('.' + headers["GET"].split()[0]))
-    if os.path.exists('.' + headers["GET"].split()[0]):
-        conn.send("HTTP/1.1 200 OK".encode(FORMAT))
-    else:
-        conn.send("HTTP/1.1 404 Not Found".encode(FORMAT))
+    req = os.path.exists('./pages/' + headers["GET"].split()[0])
+    if req:
+        with open('./pages/' + headers["GET"].split()[0], 'r') as f:
+            body = f.read()
+            conn.send(f"HTTP/1.1 200 OK\r\n\r\n{body}".encode(FORMAT))
+    else:   conn.send("HTTP/1.1 404 Not Found\r\n\r\n".encode(FORMAT))
 
 if __name__ == "__main__":
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     signal.signal(signal.SIGINT, lambda u, v: sys.exit(server.close()))
 
-    try:
-        server.bind(ADDR)
-    except OSError:
-        server.close()
+    try:    server.bind(ADDR)
+    except OSError as e:
+        print(f"OSError: {e}")
         sys.exit()
 
     server.listen()

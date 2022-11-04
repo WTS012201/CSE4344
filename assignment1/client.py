@@ -20,9 +20,18 @@ if __name__ == "__main__":
 
     send_time = time.time()
     client.send(f"GET /{FILE} HTTP/1.1\r\n\r\n".encode(FORMAT))
-    data = client.recv(DATA_LEN).decode(FORMAT)
+
+    res = client.recv(DATA_LEN).decode(FORMAT)
+    status = res[:res.find('\r\n\r\n')]
+
+    print('Status:\t', status)
+    if status == "HTTP/1.1 200 OK":
+        body = res[res.find("\r\n\r\n"):]
+        print(body)
+    else:   exit(0)
+
     recv_time = time.time()
     RTT = recv_time - send_time
+    print('RTT:\t', RTT)
 
-    print('Data received by the client is', data)
-    print('RTT ', RTT)
+    client.close()
